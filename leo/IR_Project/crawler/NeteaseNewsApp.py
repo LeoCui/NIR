@@ -20,7 +20,7 @@ class Crawler:
         payload = dict()
         headers = dict()
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
-        for key,value in self.cateIdDict.items():
+        for cate,value in self.cateIdDict.items():
             articleIdSet = set()
             offset = 0
             maxArticleCount = value[2]
