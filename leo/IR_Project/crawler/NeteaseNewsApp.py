@@ -78,7 +78,7 @@ class Crawler:
                                     break
                         break
                     if flag == True:
-                        cateArticleIdDict[key] = articleIdSet
+                        cateArticleIdDict[cate] = articleIdSet
                         break
         return cateArticleIdDict
     
