@@ -5,6 +5,7 @@ import json
 import time
 import pymysql
 import zlib
+import traceback
 
 class Crawler:
     def __init__(self, cateUrl1, cateUrl2, articleUrl, commentUrl):
@@ -41,24 +42,32 @@ class Crawler:
                 payload['size'] = 10
                 payload['fn'] = 2
                 url = self.cateUrl2
+                offset = 10
+            flag = False
             while True:
-                flag = False
                 if kind == 0:
                     url = self.cateUrl1 + value[1] + '/' + str(offset) + '-20.html'
                     offset = offset + 20
                 if kind == 1:
                     payload['offset'] = offset
-                    offset = offset + 10
+                    offset = offset + 0
                 #print(url)
-                r = requests.get(url, params=payload,  headers=headers)
                 try:
+                    r = requests.get(url, params=payload,  headers=headers)
                     r = r.json()
                 except:
-                    print('Json decode error: response of getNewsFeed')
+                    traceback.print_exc()
                     break
                 else:
                     for key,articleList in r.items():
+                        temp = len(articleList)
+                        if temp == 0:
+                            flag = True
+                            break
+                        print("get " + str(temp) + ' article')
                         for article in articleList:
+                            if 'docid' not in article.keys():
+                                continue
                             docId = article['docid']
                             # 视频过滤掉
                             if 'videoID' in article.keys():
@@ -88,9 +97,10 @@ class Crawler:
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
         r = requests.get(url, headers=headers)
         try:
+            r = requests.get(url, headers=headers)
             r = r.json()
         except:
-            print('Json decode error: response of getSpecialArticleId')
+            traceback.print_exc()
         else:
             docIdSet = set()
             topicList = r[specialId]['topics']
@@ -109,17 +119,20 @@ class Crawler:
         #print(url)
         headers = dict()
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
-        r = requests.get(url, headers=headers)
         try:
+            r = requests.get(url, headers=headers)
             r = r.json()
         except:
-            print('Json decode error: response of getArticle')
+            traceback.print_exc()
+            return None
         else:
             r = r[articleId]
             title = r['title']
             content = r['body']
+            content = self.deleteTag(content)
             appUrl = url
             webUrl = r['shareLink']
+            webUrl = self.formatUrl(webUrl)
             commentCount = r['replyCount']
             upCount = r['threadVote']
             downCount = r['threadAgainst']
@@ -149,12 +162,12 @@ class Crawler:
         while offset < maxCommentCount:
             payload['offset'] = offset
             #print(url)
-            r = requests.get(url, params=payload, headers=headers)
             try:
+                r = requests.get(url, params=payload, headers=headers)
                 r = r.json()
             except:
                 offset += (Limit + payload['headLimit'] + payload['tailLimit'])
-                print('Json decode error: response of getComment')
+                traceback.print_exc()
             else:
                 commentDict = r['comments']
                 count = len(commentDict)
@@ -165,24 +178,57 @@ class Crawler:
                 if retryTime >= maxRetryTime:
                     break
                 for id,comment in commentDict.items():
-                    publishTime = comment['createTime']
-                    if 'nickName' in comment['user'].keys():
+                    if 'createTime' in comment.keys():
+                        publishTime = comment['createTime']
+                    else:
+                        publishTime = '0000-00-00 00:00:00'
+                    if 'nickName' in comment['user'].keys() and comment['user']['nickname']!=None:
                         userName = self.formatComment(comment['user']['nickname'])
                     else:
                         userName = '匿名用户'
-                    content = self.formatComment(comment['content'])
+                    content = self.deleteTag(comment['content'])
+                    content = self.formatComment(content)
                     content1 = publishTime + ' ' + userName + ' ' + content
                     commentList.append(content1)
                 offset += count
         return commentList
     
+    def deleteTag(self, str):
+        len1 = len(str)
+        str1 = ''
+        i = 0
+        flag = 0
+        for i in range(0,len1):
+            if str[i]=='<':
+                flag = 1
+            if str[i]=='>':
+                flag = 0
+            if flag == 1 or str[i]=='>' or str[i]=='\u3000':
+                continue
+            str1 += str[i]
+        return str1
+
+    # &amp; to &
+    def formatUrl(self, url):
+        if url == None:
+            return None
+        len1 = len(url)
+        url1 = ''
+        i = 0
+        while i < len1:
+            url1 += url[i]
+            if url[i] == '&' and url[i+1] == 'a' and url[i+2] == 'm' and url[i+3] == 'p' and url[i+4] ==';':
+                i = i + 4
+            i = i + 1
+        return url1
+
     #remove '|' and ' ' from userName and content
     def formatComment(self, str):
         len1 = len(str)
         str1 = ''
         i = 0
         for i in range(0,len1):
-            if str[i] == '|' or str[i] == ' ':
+            if str[i] == '|' or str[i] == ' ' or str[i] == '\t' or str[i] == '\r' or str[i] == '\n':
                 continue
             str1 += str[i]
         return str1
@@ -196,10 +242,12 @@ class Crawler:
             valueDict = dict()
             valueDict['title'] = news.title
             valueDict['url'] = news.webUrl
+            valueDict['source'] = 'NeteaseNewsApp'
             valueDict['url_hash'] = zlib.crc32(bytes(news.webUrl,'utf8'))
             valueDict['pv'] = news.readCount
             valueDict['comment_number'] = news.commentCount
-            valueDict['publish_time'] = news.publishTime
+            if news.publishTime != '':
+                valueDict['publish_time'] = news.publishTime
             valueDict['category'] = news.category
             newsId = db.insert('news_info', valueDict)
             #content_info
@@ -251,6 +299,7 @@ class Crawler:
                 db.insert('comment_info', valueDict)
         except: 
             traceback.print_exc()
+            print(valueDict)
             db.connection.rollback()
         else:
             db.connection.commit()
@@ -346,6 +395,8 @@ def main():
         for articleId in articleIdList:
             print("handle  " + str(number))
             news = neteaseAppCrawler.getArticle(articleId)
+            if news == None:
+                continue
             #网易的锅，无法显示全部评论
             commentList = neteaseAppCrawler.getComment(articleId, min(news.commentCount, 100))
             news.category = cate
@@ -356,15 +407,14 @@ def main():
 
 def readConf():
     cateIdDict = dict()
-    cateIdDict['politics'] = (0, 'T1414142214384', 100)
-    cateIdDict['society'] = (1, 'T1348648037603', 100)
-    cateIdDict['technology'] = (1, 'T1348649580692', 100)
-    cateIdDict['finance'] = (1, 'T1348648756099', 100)
-    cateIdDict['sport'] = (1, 'T1348649079062', 100)
-    cateIdDict['military'] = (1, 'T1348648141035', 100)
-    cateIdDict['entertainment'] = (1, 'T1348648517839', 100)
-    cateIdDict['NBA'] = (1, 'T1348649145984', 100)
+    cateIdDict['politics'] = (0, 'T1414142214384', 500)
+    cateIdDict['society'] = (1, 'T1348648037603', 500)
+    cateIdDict['technology'] = (1, 'T1348649580692', 300)
+    cateIdDict['finance'] = (1, 'T1348648756099', 300)
+    cateIdDict['sport'] = (1, 'T1348649079062', 300)
+    cateIdDict['military'] = (1, 'T1348648141035', 300)
+    cateIdDict['entertainment'] = (1, 'T1348648517839', 300)
+    cateIdDict['NBA'] = (1, 'T1348649145984', 300)
     return cateIdDict
-
 if __name__ == '__main__':
     main()
