@@ -6,6 +6,7 @@ import time
 import pymysql
 import zlib
 import traceback
+import lib.utils as utils
 
 class Crawler:
     def __init__(self, cateUrl1, cateUrl2, articleUrl, commentUrl):
@@ -26,6 +27,8 @@ class Crawler:
             offset = 0
             maxArticleCount = value[2]
             kind = value[0]
+            maxTime = 200
+            currentTime = 0
             if kind == 1: 
                 payload['from'] = value[1] 
                 payload['devId'] = 'QMEYFEbZjK7S8W7Xdz5ujdKsWvHlCU3m%2FH219JXxZvNqutd1gfNLYc4u8crYIMhg'
@@ -45,6 +48,9 @@ class Crawler:
                 offset = 10
             flag = False
             while True:
+                if currentTime > maxTime:
+                    cateArticleIdDict[cate] = articleIdSet
+                    break
                 if kind == 0:
                     url = self.cateUrl1 + value[1] + '/' + str(offset) + '-20.html'
                     offset = offset + 20
@@ -53,12 +59,18 @@ class Crawler:
                     offset = offset + 0
                 #print(url)
                 try:
-                    r = requests.get(url, params=payload,  headers=headers)
+                    r = requests.get(url, params=payload,  headers=headers, timeout = 3)
                     r = r.json()
+                except requests.exceptions.ConnectTimeout:
+                    traceback.print_exc()
+                    break
+                except requests.exceptions.Timeout:
+                    traceback.print_exc()
                 except:
                     traceback.print_exc()
                     break
                 else:
+                    currentTime += 1
                     for key,articleList in r.items():
                         temp = len(articleList)
                         if temp == 0:
@@ -96,48 +108,52 @@ class Crawler:
         headers = dict()
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
         r = requests.get(url, headers=headers)
+        docIdSet = set()
         try:
-            r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers, timeout = 3)
             r = r.json()
+            topicList = r[specialId]['topics']
         except:
             traceback.print_exc()
         else:
-            docIdSet = set()
-            topicList = r[specialId]['topics']
             for topic in topicList:
                 docList = topic['docs']
                 for doc in docList:
                     docId = doc['docid']
                     docIdSet.add(docId)
-            #print('docIdSet: ')
-            #print(docIdSet)
-            return docIdSet
+        return docIdSet
         
-    def getArticle(self, articleId):
+    def getArticle( self, db, articleId, source):
         #print('getArticle')
         url = self.articleUrl + articleId  + '/full.html'
         #print(url)
         headers = dict()
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
         try:
-            r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers, timeout = 3)
             r = r.json()
         except:
             traceback.print_exc()
             return None
         else:
             r = r[articleId]
+            if 'title' not in r.keys():
+                return None
             title = r['title']
-            content = r['body']
-            content = self.deleteTag(content)
-            appUrl = url
+            if title == None:
+                return None
             webUrl = r['shareLink']
-            webUrl = self.formatUrl(webUrl)
+            webUrl = utils.formatUrl(webUrl)
+            if utils.checkVisited(webUrl, db):
+                return -1
+            content = r['body']
+            content = utils.formatContent(content)
+            appUrl = url
             commentCount = r['replyCount']
             upCount = r['threadVote']
             downCount = r['threadAgainst']
             publishTime = r['ptime']
-            news = News(title, appUrl, webUrl, content, publishTime)
+            news = News(title, appUrl, webUrl, content, publishTime, source)
             news.commentCount = commentCount
             news.upCount = upCount
             news.downCount = downCount
@@ -163,7 +179,7 @@ class Crawler:
             payload['offset'] = offset
             #print(url)
             try:
-                r = requests.get(url, params=payload, headers=headers)
+                r = requests.get(url, params=payload, headers=headers, timeout = 3)
                 r = r.json()
             except:
                 offset += (Limit + payload['headLimit'] + payload['tailLimit'])
@@ -183,206 +199,26 @@ class Crawler:
                     else:
                         publishTime = '0000-00-00 00:00:00'
                     if 'nickName' in comment['user'].keys() and comment['user']['nickname']!=None:
-                        userName = self.formatComment(comment['user']['nickname'])
+                        userName = utils.formatContent(comment['user']['nickname'])
+                        userName = utils.formatComment(userName)
                     else:
                         userName = '匿名用户'
-                    content = self.deleteTag(comment['content'])
-                    content = self.formatComment(content)
+                    content = utils.formatContent(comment['content'])
+                    content = utils.formatComment(content)
                     content1 = publishTime + ' ' + userName + ' ' + content
                     commentList.append(content1)
                 offset += count
         return commentList
     
-    def deleteTag(self, str):
-        len1 = len(str)
-        str1 = ''
-        i = 0
-        flag = 0
-        for i in range(0,len1):
-            if str[i]=='<':
-                flag = 1
-            if str[i]=='>':
-                flag = 0
-            if flag == 1 or str[i]=='>' or str[i]=='\u3000':
-                continue
-            str1 += str[i]
-        return str1
 
-    # &amp; to &
-    def formatUrl(self, url):
-        if url == None:
-            return None
-        len1 = len(url)
-        url1 = ''
-        i = 0
-        while i < len1:
-            url1 += url[i]
-            if url[i] == '&' and url[i+1] == 'a' and url[i+2] == 'm' and url[i+3] == 'p' and url[i+4] ==';':
-                i = i + 4
-            i = i + 1
-        return url1
-
-    #remove '|' and ' ' from userName and content
-    def formatComment(self, str):
-        len1 = len(str)
-        str1 = ''
-        i = 0
-        for i in range(0,len1):
-            if str[i] == '|' or str[i] == ' ' or str[i] == '\t' or str[i] == '\r' or str[i] == '\n':
-                continue
-            str1 += str[i]
-        return str1
-    
-    def storeToDb(self, news, db):
-        try:
-            #news_info
-            if self.checkVisited(news.webUrl, db):
-                print("duplicate news")
-                return 
-            valueDict = dict()
-            valueDict['title'] = news.title
-            valueDict['url'] = news.webUrl
-            valueDict['source'] = 'NeteaseNewsApp'
-            valueDict['url_hash'] = zlib.crc32(bytes(news.webUrl,'utf8'))
-            valueDict['pv'] = news.readCount
-            valueDict['comment_number'] = news.commentCount
-            if news.publishTime != '':
-                valueDict['publish_time'] = news.publishTime
-            valueDict['category'] = news.category
-            newsId = db.insert('news_info', valueDict)
-            #content_info
-            content = news.content
-            len1 = len(content)
-            offset = 0
-            strSize = 340
-            maxByteSize = 1024
-            i = 0
-            while offset < len1:
-                #print(offset)
-                #print(offset+strSize)
-                str = content[offset : offset + strSize]
-                str1 = str.encode(encoding = 'utf8')
-                if len(str1) > maxByteSize:
-                    str = content[offset, offset + strSize/2]
-                    str1 = str.encode(encoding = 'utf8')
-                    offset = offset - strSize/2
-                valueDict = dict()
-                valueDict['news_id'] = newsId
-                valueDict['sequence_number'] = i
-                valueDict['content'] = str
-                db.insert('content_info', valueDict)
-                offset = offset + strSize
-                i = i + 1
-            #comment_info
-            commentList = news.commentList
-            str1 = ''
-            count = 0
-            for comment in commentList:
-                temp = str1 + comment + '|'
-                temp = temp.encode(encoding = 'utf8')
-                if len(temp) > maxByteSize:
-                    valueDict = dict()
-                    valueDict['news_id'] = newsId
-                    valueDict['comment_number'] = count
-                    valueDict['content'] = str1
-                    db.insert('comment_info', valueDict)
-                    str1 = ''
-                    count = 0
-                else:
-                    str1 = str1 + comment + '|'
-                    count += 1
-            if count > 0:
-                valueDict = dict()
-                valueDict['news_id'] = newsId
-                valueDict['comment_number'] = count
-                valueDict['content'] = str1
-                db.insert('comment_info', valueDict)
-        except: 
-            traceback.print_exc()
-            print(valueDict)
-            db.connection.rollback()
-        else:
-            db.connection.commit()
-
-    def checkVisited(self, url, db):
-        urlHash = zlib.crc32(bytes(url,'utf8'))
-        queryList = ['url']
-        conds = 'url_hash=' + str(urlHash)
-        urlList = db.select('news_info', queryList, conds);
-        if urlList is None:
-            return False
-        for url1 in urlList:
-            if url == url1:
-                return True
-        return False
-
-class News:
-    def __init__(self, title, appUrl, webUrl, content, publishTime):
-        self.title = title
-        self.appUrl = appUrl
-        self.category = ''
-        self.webUrl = webUrl
-        self.content = content
-        self.commentList = list()
-        self.readCount = -1
-        self.commentCount = -1
-        self.upCount = -1
-        self.downCount = -1
-        self.publishTime = publishTime
-        
-class Mysql:
-    #close
-    #rollback
-    #commit
-    def __init__(self, host, username, password, database):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.database = database
-        self.connection = pymysql.connect(host, username, password, database, charset='utf8')
-        self.cursor = self.connection.cursor()
-        
-    def select(self, tableName, queryList, conds):
-        queryStr = ''
-        for query in queryList:
-            queryStr = queryStr + query + ','
-        queryStr = queryStr[ 0:len(queryStr)-1 ]
-        sql = 'select ' + queryStr + ' from  ' + tableName + ' where ' + conds;
-        self.cursor.execute(sql)
-        result = self.cursor.fetchone()
-        return result
-    
-    def insert(self, tableName, valueDict):
-        keyStr = ""
-        valueStr = ""
-        valueList = list()
-        for key, value in valueDict.items():
-            keyStr += key
-            keyStr += ','
-            valueStr  += "%s,"
-            valueList.append(value)
-        keyStr = keyStr[0:len(keyStr)-1]
-        valueStr = valueStr[0:len(valueStr)-1]
-        sql = "INSERT INTO " + tableName + " (" + keyStr + ") VALUES (" + valueStr + ")" 
-        #print(sql)
-        #print(valueList)
-        self.cursor.execute(sql, valueList)
-        return self.connection.insert_id()
-    
-    def update(self):
-        return
-    
-    def delete(self):
-        return 
-    
-    
 def main():
     articleUrl = 'https://c.m.163.com/nc/article/'
     commentUrl = 'https://comment.api.163.com/api/v1/products/a2869674571f77b5a0867c3d71db5856/threads/'
     cateUrl1 = 'https://c.m.163.com/nc/article/list/'
     cateUrl2 = 'https://c.m.163.com/dlist/article/dynamic'
     specialNewsUrl = 'https://c.m.163.com/nc/special/'
-    db = Mysql('localhost', 'root', '123456', 'information_retrieval')
+    db = utils.Mysql('localhost', 'root', 'informationRetrieval', 'information_retrieval')
+    source = 'NeteaseNewsApp'
     neteaseAppCrawler = Crawler(cateUrl1, cateUrl2, articleUrl, commentUrl)
     neteaseAppCrawler.specialNewsUrl = specialNewsUrl
     cateIdDict = readConf();
@@ -391,30 +227,38 @@ def main():
     for cate, articleIdList in cateArticleIdDict.items():
         print('category: ' + cate)
         print('count of article:' + str(len(articleIdList)))
-        number = 0
+        number = 1
+        duplicateCount = 0
+        failCount = 0
         for articleId in articleIdList:
-            print("handle  " + str(number))
-            news = neteaseAppCrawler.getArticle(articleId)
+            if number % 50 == 0:
+                print("handle  " + str(number) + '    duplicateCount: ' + str(duplicateCount) + '   failCount:  '  + str(failCount))
+            number += 1
+            news = neteaseAppCrawler.getArticle(db, articleId, source)
             if news == None:
+                failCount += 1
+                continue
+            if news == -1:
+                duplicateCount += 1
                 continue
             #网易的锅，无法显示全部评论
             commentList = neteaseAppCrawler.getComment(articleId, min(news.commentCount, 100))
             news.category = cate
             news.commentList = commentList
             neteaseAppCrawler.storeToDb(news, db)
-            number += 1
+
     db.connection.close()
 
 def readConf():
     cateIdDict = dict()
-    cateIdDict['politics'] = (0, 'T1414142214384', 500)
-    cateIdDict['society'] = (1, 'T1348648037603', 500)
-    cateIdDict['technology'] = (1, 'T1348649580692', 300)
-    cateIdDict['finance'] = (1, 'T1348648756099', 300)
-    cateIdDict['sport'] = (1, 'T1348649079062', 300)
-    cateIdDict['military'] = (1, 'T1348648141035', 300)
-    cateIdDict['entertainment'] = (1, 'T1348648517839', 300)
-    cateIdDict['NBA'] = (1, 'T1348649145984', 300)
+    cateIdDict['politics'] = (0, 'T1414142214384', 100)
+    cateIdDict['society'] = (1, 'T1348648037603', 1000)
+    cateIdDict['technology'] = (1, 'T1348649580692', 1000)
+    cateIdDict['finance'] = (1, 'T1348648756099', 1000)
+    cateIdDict['sport'] = (1, 'T1348649079062', 1000)
+    cateIdDict['military'] = (1, 'T1348648141035', 1000)
+    cateIdDict['entertainment'] = (1, 'T1348648517839', 1000)
+    cateIdDict['NBA'] = (1, 'T1348649145984', 1000)
     return cateIdDict
 if __name__ == '__main__':
     main()

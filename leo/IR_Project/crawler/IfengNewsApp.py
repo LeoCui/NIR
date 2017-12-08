@@ -6,7 +6,7 @@ import time
 import pymysql
 import zlib
 import traceback
-
+import lib.utils as utils
 class Crawler:
     def __init__(self, cateUrl, articleUrl, commentUrl):
         self.cateUrl = cateUrl
@@ -30,9 +30,15 @@ class Crawler:
             flag = False
             while True:
                 try:
-                    r = requests.get(url, params=payload,  headers=headers)
+                    r = requests.get(url, params=payload,  headers=headers, timeout = 3)
                     r = r.json() 
                     articleList = r[0]['item']
+                except requests.exceptions.ConnectTimeout:
+                    traceback.print_exc()
+                    break
+                except requests.exceptions.Timeout:
+                    traceback.print_exc()
+                    payload['page'] = payload['page'] + 1
                 except:
                     traceback.print_exc()
                     break
@@ -60,30 +66,34 @@ class Crawler:
         return cateNewsDict
     
         
-    def getArticle(self, articleId):
+    def getArticle(self, db, articleId, source):
         url = self.articleUrl
         url += articleId
         headers = dict()
         payload = dict()
         headers['User-Agent'] = 'NewsApp/29.1 iOS/11.0.3 (iPhone8,1)'
         try:
-            r = requests.get(url, headers=headers, params=payload)
+            r = requests.get(url, headers=headers, params=payload, timeout = 3)
             r = r.json()
+            r = r['body']
         except:
             traceback.print_exc()
             return None
         else:
-            r = r['body']
+            if 'title' not in r.keys():
+                return None
             title = r['title']
             if title == None:
                 return None
-            content = r['text']
-            content = self.deleteTag(content)
-            appUrl = url
             webUrl = r['shareurl']
-            webUrl = self.formatUrl(webUrl)
+            webUrl = utils.formatUrl(webUrl)
+            if utils.checkVisited(webUrl, db):
+                return -1
+            content = r['text']
+            content = utils.formatContent(content)
+            appUrl = url
             publishTime = r['updateTime']
-            news = News(title, appUrl, webUrl, content, publishTime) 
+            news = utils.News(title, appUrl, webUrl, content, publishTime, source)
             return news  
 
 
@@ -101,9 +111,15 @@ class Crawler:
         maxRetryTime = 5
         while offset < maxCommentCount:
             try:
-                r = requests.get(url, params=payload, headers=headers)
+                r = requests.get(url, params=payload, headers=headers, timeout = 3)
                 r = r.json()
                 commentList = r['data']
+            except requests.exceptions.ConnectTimeout:
+                traceback.print_exc()
+                break
+            except requests.exceptions.Timeout:
+                traceback.print_exc()
+                payload['page'] = payload['page'] + 1
             except:
                 traceback.print_exc()
                 break
@@ -124,208 +140,23 @@ class Crawler:
                     else:
                         publishTime = '0000-00-00 00:00:00'
                     if 'nickname' in comment.keys() and comment['nickname']!=None:
-                        userName = self.formatComment(comment['nickname'])
+                        userName = utils.formatContent(comment['nickname'])
+                        userName = utils.formatComment(userName)
                     else:
                         userName = '匿名用户'
-                    content = self.deleteTag(comment['data']['comment_contents'])
-                    content = self.formatComment(content)
+                    content = utils.formatContent(comment['data']['comment_contents'])
+                    content = utils.formatComment(content)
                     content1 = publishTime + ' ' + userName + ' ' + content
                     commentList1.append(content1)
                 offset += count
         return commentList1
     
-    def deleteTag(self, str):
-        if str == None:
-            return None
-        len1 = len(str)
-        str1 = ''
-        i = 0
-        flag = 0
-        for i in range(0,len1):
-            if str[i]=='<':
-                flag = 1
-            if str[i]=='>':
-                flag = 0
-            if flag == 1 or str[i]=='>' or str[i]=='\u3000':
-                continue
-            str1 += str[i]
-        return str1
-
-    # &amp; to &
-    def formatUrl(self, url):
-        if url == None:
-            return None
-        len1 = len(url)
-        url1 = ''
-        i = 0
-        while i < len1:
-            url1 += url[i]
-            if url[i] == '&' and url[i+1] == 'a' and url[i+2] == 'm' and url[i+3] == 'p' and url[i+4] ==';':
-                i = i + 4
-            i = i + 1
-        return url1
-
-    #remove '|' and ' ' from userName and content
-    def formatComment(self, str):
-        len1 = len(str)
-        str1 = ''
-        i = 0
-        for i in range(0,len1):
-            if str[i] == '|' or str[i] == ' ' or str[i] == '\n' or str[i] == '\t' or str[i] == '\r':
-                continue
-            str1 += str[i]
-        return str1
-    
-    def storeToDb(self, news, db):
-        try:
-            #news_info
-            if self.checkVisited(news.webUrl, db):
-                print("duplicate news")
-                return 
-            valueDict = dict()
-            valueDict['title'] = news.title
-            valueDict['url'] = news.webUrl
-            valueDict['source'] = 'IfengNewsApp'
-            valueDict['url_hash'] = zlib.crc32(bytes(news.webUrl,'utf8'))
-            valueDict['pv'] = news.readCount
-            valueDict['comment_number'] = news.commentCount
-            if news.publishTime != '':
-                valueDict['publish_time'] = news.publishTime
-            valueDict['category'] = news.category
-            newsId = db.insert('news_info', valueDict)
-            #content_info
-            content = news.content
-            len1 = len(content)
-            offset = 0
-            strSize = 340
-            maxByteSize = 1024
-            i = 0
-            while offset < len1:
-                #print(offset)
-                #print(offset+strSize)
-                str = content[offset : offset + strSize]
-                str1 = str.encode(encoding = 'utf8')
-                if len(str1) > maxByteSize:
-                    str = content[offset, offset + strSize/2]
-                    str1 = str.encode(encoding = 'utf8')
-                    offset = offset - strSize/2
-                valueDict = dict()
-                valueDict['news_id'] = newsId
-                valueDict['sequence_number'] = i
-                valueDict['content'] = str
-                db.insert('content_info', valueDict)
-                offset = offset + strSize
-                i = i + 1
-            #comment_info
-            commentList = news.commentList
-            str1 = ''
-            count = 0
-            for comment in commentList:
-                temp = str1 + comment + '|'
-                temp = temp.encode(encoding = 'utf8')
-                if len(temp) > maxByteSize:
-                    valueDict = dict()
-                    valueDict['news_id'] = newsId
-                    valueDict['comment_number'] = count
-                    valueDict['content'] = str1
-                    db.insert('comment_info', valueDict)
-                    str1 = ''
-                    count = 0
-                else:
-                    str1 = str1 + comment + '|'
-                    count += 1
-            if count > 0:
-                valueDict = dict()
-                valueDict['news_id'] = newsId
-                valueDict['comment_number'] = count
-                valueDict['content'] = str1
-                db.insert('comment_info', valueDict)
-        except: 
-            traceback.print_exc()
-            print(valueDict)
-            db.connection.rollback()
-        else:
-            db.connection.commit()
-
-    def checkVisited(self, url, db):
-        if url == None:
-            return False
-        urlHash = zlib.crc32(bytes(url,'utf8'))
-        queryList = ['url']
-        conds = 'url_hash=' + str(urlHash)
-        urlList = db.select('news_info', queryList, conds);
-        if urlList is None:
-            return False
-        for url1 in urlList:
-            if url == url1:
-                return True
-        return False
-
-class News:
-    def __init__(self, title, appUrl, webUrl, content, publishTime):
-        self.title = title
-        self.appUrl = appUrl
-        self.category = ''
-        self.webUrl = webUrl
-        self.content = content
-        self.commentList = list()
-        self.readCount = -1
-        self.commentCount = -1
-        self.upCount = -1
-        self.downCount = -1
-        self.publishTime = publishTime
-        
-class Mysql:
-    #close
-    #rollback
-    #commit
-    def __init__(self, host, username, password, database):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.database = database
-        self.connection = pymysql.connect(host, username, password, database, charset='utf8')
-        self.cursor = self.connection.cursor()
-        
-    def select(self, tableName, queryList, conds):
-        queryStr = ''
-        for query in queryList:
-            queryStr = queryStr + query + ','
-        queryStr = queryStr[ 0:len(queryStr)-1 ]
-        sql = 'select ' + queryStr + ' from  ' + tableName + ' where ' + conds;
-        self.cursor.execute(sql)
-        result = self.cursor.fetchone()
-        return result
-    
-    def insert(self, tableName, valueDict):
-        keyStr = ""
-        valueStr = ""
-        valueList = list()
-        for key, value in valueDict.items():
-            keyStr += key
-            keyStr += ','
-            valueStr  += "%s,"
-            valueList.append(value)
-        keyStr = keyStr[0:len(keyStr)-1]
-        valueStr = valueStr[0:len(valueStr)-1]
-        sql = "INSERT INTO " + tableName + " (" + keyStr + ") VALUES (" + valueStr + ")" 
-        #print(sql)
-        #print(valueList)
-        self.cursor.execute(sql, valueList)
-        return self.connection.insert_id()
-    
-    def update(self):
-        return
-    
-    def delete(self):
-        return 
-    
-    
 def main():
     cateUrl = 'https://api.iclient.ifeng.com/ClientNews'
     articleUrl = ''
     commentUrl = 'https://user.iclient.ifeng.com/Social_Api_Comment/getCommentList'
-    db = Mysql('localhost', 'root', '123456', 'information_retrieval')
+    db = utils.Mysql('localhost', 'root', 'informationRetrieval', 'information_retrieval')
+    source = 'ifengNewsApp'
     ifengAppCrawler = Crawler(cateUrl, articleUrl, commentUrl)
     cateIdDict = readConf();
     ifengAppCrawler.cateIdDict = cateIdDict
@@ -333,33 +164,41 @@ def main():
     for cate, newsList in cateNewsDict.items():
         print('category: ' + cate)
         print('count of article:' + str(len(newsList)))
-        number = 0
+        number = 1
+        duplicateCount = 0
+        failCount = 0
         for news in newsList:
             articleId = news['articleId']
             commentUrl = news['commentUrl']
             commentNum = news['commentNum']
-            print("handle  " + str(number) + ':' + str(articleId))
-            news = ifengAppCrawler.getArticle(articleId)
+            if number % 50 == 0:
+                print("handle  " + str(number) + '    duplicateCount: ' + str(duplicateCount) + '   failCount:  '  + str(failCount))
+            number += 1
+            news = ifengAppCrawler.getArticle(db, articleId, source)
             if news == None:
+                failCount += 1
+                continue
+            if news == -1:
+                duplicateCount += 1
                 continue
             news.commentCount = commentNum
             commentList = ifengAppCrawler.getComment(commentUrl, min(100, int(news.commentCount)))
             news.category = cate
             news.commentList = commentList
-            ifengAppCrawler.storeToDb(news, db)
-            number += 1
+            utils.storeToDb(news, db)
     db.connection.close()
 
 def readConf():
     cateIdDict = dict()
-    cateIdDict['society'] = ('NXWPD,FOCUSNXWPD', 500)
-    cateIdDict['technology'] = ('KJ123,FOCUSKJ123', 500)
-    cateIdDict['finance'] = ('CJ33,FOCUSCJ33,HNCJ33', 500)
-    cateIdDict['sport'] = ('TY43,FOCUSTY43,TYLIVE', 500)
-    cateIdDict['military'] = ('JS83,FOCUSJS83', 500)
-    cateIdDict['entertainment'] = ('YL53,FOCUSYL53', 500)
-    cateIdDict['nba'] = ('NXWPD,FOCUSNXWPD', 50)
-    cateIdDict['politics'] = ('SZPD,FOCUSSZPD', 500)
+
+    cateIdDict['society'] = ('NXWPD,FOCUSNXWPD', 1000)
+    cateIdDict['technology'] = ('KJ123,FOCUSKJ123', 1000)
+    cateIdDict['finance'] = ('CJ33,FOCUSCJ33,HNCJ33', 1000)
+    cateIdDict['sport'] = ('TY43,FOCUSTY43,TYLIVE', 1000)
+    cateIdDict['military'] = ('JS83,FOCUSJS83', 1000)
+    cateIdDict['entertainment'] = ('YL53,FOCUSYL53', 1000)
+    cateIdDict['nba'] = ('NXWPD,FOCUSNXWPD', 1000)
+    cateIdDict['politics'] = ('SZPD,FOCUSSZPD', 1000)
     return cateIdDict
 if __name__ == '__main__':
     main()
