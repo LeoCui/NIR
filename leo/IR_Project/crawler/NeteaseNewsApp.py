@@ -49,8 +49,8 @@ class Crawler:
             flag = False
             while True:
                 if currentTime > maxTime:
-                    cateArticleIdDict[cate] = articleIdSet
                     break
+                currentTime += 1
                 if kind == 0:
                     url = self.cateUrl1 + value[1] + '/' + str(offset) + '-20.html'
                     offset = offset + 20
@@ -64,13 +64,9 @@ class Crawler:
                 except requests.exceptions.ConnectTimeout:
                     traceback.print_exc()
                     break
-                except requests.exceptions.Timeout:
-                    traceback.print_exc()
                 except:
                     traceback.print_exc()
-                    break
                 else:
-                    currentTime += 1
                     for key,articleList in r.items():
                         temp = len(articleList)
                         if temp == 0:
@@ -99,8 +95,8 @@ class Crawler:
                                     break
                         break
                     if flag == True:
-                        cateArticleIdDict[cate] = articleIdSet
                         break
+            cateArticleIdDict[cate] = articleIdSet
         return cateArticleIdDict
     
     def getSpecialArticleId(self, specialId):
@@ -153,7 +149,7 @@ class Crawler:
             upCount = r['threadVote']
             downCount = r['threadAgainst']
             publishTime = r['ptime']
-            news = News(title, appUrl, webUrl, content, publishTime, source)
+            news = utils.News(title, appUrl, webUrl, content, publishTime, source)
             news.commentCount = commentCount
             news.upCount = upCount
             news.downCount = downCount
@@ -181,9 +177,15 @@ class Crawler:
             try:
                 r = requests.get(url, params=payload, headers=headers, timeout = 3)
                 r = r.json()
-            except:
+            #except requests.exceptions.ConnectTimeout:
+                #traceback.print_exc()
+                #break
+            except requests.exceptions.Timeout:
                 offset += (Limit + payload['headLimit'] + payload['tailLimit'])
                 traceback.print_exc()
+            except:
+                traceback.print_exc()
+                break
             else:
                 commentDict = r['comments']
                 count = len(commentDict)
@@ -245,20 +247,20 @@ def main():
             commentList = neteaseAppCrawler.getComment(articleId, min(news.commentCount, 100))
             news.category = cate
             news.commentList = commentList
-            neteaseAppCrawler.storeToDb(news, db)
+            utils.storeToDb(news, db)
 
     db.connection.close()
 
 def readConf():
     cateIdDict = dict()
-    cateIdDict['politics'] = (0, 'T1414142214384', 100)
-    cateIdDict['society'] = (1, 'T1348648037603', 1000)
-    cateIdDict['technology'] = (1, 'T1348649580692', 1000)
-    cateIdDict['finance'] = (1, 'T1348648756099', 1000)
-    cateIdDict['sport'] = (1, 'T1348649079062', 1000)
-    cateIdDict['military'] = (1, 'T1348648141035', 1000)
-    cateIdDict['entertainment'] = (1, 'T1348648517839', 1000)
-    cateIdDict['NBA'] = (1, 'T1348649145984', 1000)
+    cateIdDict['politics'] = (0, 'T1414142214384', 1000)
+    cateIdDict['society'] = (1, 'T1348648037603', 1500)
+    cateIdDict['technology'] = (1, 'T1348649580692', 1500)
+    cateIdDict['finance'] = (1, 'T1348648756099', 1500)
+    cateIdDict['sport'] = (1, 'T1348649079062', 1500)
+    cateIdDict['military'] = (1, 'T1348648141035', 1500)
+    cateIdDict['entertainment'] = (1, 'T1348648517839', 1500)
+    cateIdDict['NBA'] = (1, 'T1348649145984', 1500)
     return cateIdDict
 if __name__ == '__main__':
     main()

@@ -37,12 +37,9 @@ class Crawler:
                 except requests.exceptions.ConnectTimeout:
                     traceback.print_exc()
                     break
-                except requests.exceptions.Timeout:
-                    traceback.print_exc()
-                    payload['p'] = payload['p'] + 1
                 except:
+                    payload['p'] = payload['p'] + 1
                     traceback.print_exc()
-                    break
                 else:
                     payload['p'] = payload['p'] + 1
                     print('get article: ' + str(len(articleList)))
@@ -128,12 +125,9 @@ class Crawler:
             except requests.exceptions.ConnectTimeout:
                 traceback.print_exc()
                 break
-            except requests.exceptions.Timeout: 
-                traceback.print_exc()
-                payload['page'] = payload['page'] + 1
             except:
+                payload['page'] = payload['page'] + 1
                 traceback.print_exc()
-                break
             else:
                 payload['page'] = payload['page'] + 1
                 count = len(commentList)

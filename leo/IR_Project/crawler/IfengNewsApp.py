@@ -36,12 +36,9 @@ class Crawler:
                 except requests.exceptions.ConnectTimeout:
                     traceback.print_exc()
                     break
-                except requests.exceptions.Timeout:
-                    traceback.print_exc()
-                    payload['page'] = payload['page'] + 1
                 except:
+                    payload['page'] = payload['page'] + 1
                     traceback.print_exc()
-                    break
                 else:
                     payload['page'] = payload['page'] + 1
                     print('get article count: ' + str(len(articleList)))
@@ -117,12 +114,9 @@ class Crawler:
             except requests.exceptions.ConnectTimeout:
                 traceback.print_exc()
                 break
-            except requests.exceptions.Timeout:
-                traceback.print_exc()
-                payload['page'] = payload['page'] + 1
             except:
+                payload['page'] = payload['page'] + 1
                 traceback.print_exc()
-                break
             else:
                 payload['page'] = payload['page'] + 1
                 count = len(commentList)
@@ -191,14 +185,14 @@ def main():
 def readConf():
     cateIdDict = dict()
 
-    cateIdDict['society'] = ('NXWPD,FOCUSNXWPD', 1000)
-    cateIdDict['technology'] = ('KJ123,FOCUSKJ123', 1000)
-    cateIdDict['finance'] = ('CJ33,FOCUSCJ33,HNCJ33', 1000)
-    cateIdDict['sport'] = ('TY43,FOCUSTY43,TYLIVE', 1000)
-    cateIdDict['military'] = ('JS83,FOCUSJS83', 1000)
-    cateIdDict['entertainment'] = ('YL53,FOCUSYL53', 1000)
-    cateIdDict['nba'] = ('NXWPD,FOCUSNXWPD', 1000)
-    cateIdDict['politics'] = ('SZPD,FOCUSSZPD', 1000)
+    cateIdDict['society'] = ('NXWPD,FOCUSNXWPD', 2000)
+    cateIdDict['technology'] = ('KJ123,FOCUSKJ123', 2000)
+    cateIdDict['finance'] = ('CJ33,FOCUSCJ33,HNCJ33', 2000)
+    cateIdDict['sport'] = ('TY43,FOCUSTY43,TYLIVE', 2000)
+    cateIdDict['military'] = ('JS83,FOCUSJS83', 2000)
+    cateIdDict['entertainment'] = ('YL53,FOCUSYL53', 2000)
+    cateIdDict['nba'] = ('NXWPD,FOCUSNXWPD', 2000)
+    cateIdDict['politics'] = ('SZPD,FOCUSSZPD', 2000)
     return cateIdDict
 if __name__ == '__main__':
     main()

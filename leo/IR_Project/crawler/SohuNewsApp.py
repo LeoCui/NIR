@@ -37,12 +37,9 @@ class Crawler:
                 except requests.exceptions.ConnectTimeout:
                     traceback.print_exc()
                     break
-                except requests.exceptions.Timeout:
-                    traceback.print_exc()
-                    payload['page'] = payload['page'] + 1
                 except:
+                    payload['page'] = payload['page'] + 1
                     traceback.print_exc()
-                    break
                 else:
                     payload['page'] = payload['page'] + 1
                     print('get article: ' + str(len(articleList)))
@@ -153,12 +150,9 @@ class Crawler:
             except requests.exceptions.ConnectTimeout:
                 traceback.print_exc()
                 break
-            except requests.exceptions.Timeout:
-                traceback.print_exc()
-                payload['page'] = payload['page'] + 1       
             except:
+                payload['page'] = payload['page'] + 1       
                 traceback.print_exc()
-                break
             else:
                 payload['page'] = payload['page'] + 1
                 commentList = r['response']['commentList']
@@ -231,14 +225,14 @@ def main():
 def readConf():
     cateIdDict = dict()
     
-    cateIdDict['international'] = (45, 1000)
-    cateIdDict['society'] = (23, 1000)
-    cateIdDict['technology'] = (6, 1000)
-    cateIdDict['finance'] = (4, 1000)
-    cateIdDict['sport'] = (2, 1000)
-    cateIdDict['military'] = (5, 1000)
-    cateIdDict['entertainment'] = (3, 1000)
-    cateIdDict['beijing'] = (283, 1000)
+    cateIdDict['international'] = (45, 2000)
+    cateIdDict['society'] = (23, 2000)
+    cateIdDict['technology'] = (6, 2000)
+    cateIdDict['finance'] = (4,2000)
+    cateIdDict['sport'] = (2, 2000)
+    cateIdDict['military'] = (5, 2000)
+    cateIdDict['entertainment'] = (3, 2000)
+    cateIdDict['beijing'] = (283, 2000)
     return cateIdDict
 if __name__ == '__main__':
     main()
