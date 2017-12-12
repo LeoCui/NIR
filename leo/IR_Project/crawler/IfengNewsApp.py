@@ -32,7 +32,6 @@ class Crawler:
                 try:
                     r = requests.get(url, params=payload,  headers=headers, timeout = 3)
                     r = r.json() 
-                    articleList = r[0]['item']
                 except requests.exceptions.ConnectTimeout:
                     traceback.print_exc()
                     break
@@ -40,6 +39,8 @@ class Crawler:
                     payload['page'] = payload['page'] + 1
                     traceback.print_exc()
                 else:
+                    if len(r) > 0 and 'item' in r[0].keys():
+                        articleList = r[0]['item']
                     payload['page'] = payload['page'] + 1
                     print('get article count: ' + str(len(articleList)))
                     if len(articleList) == 0:

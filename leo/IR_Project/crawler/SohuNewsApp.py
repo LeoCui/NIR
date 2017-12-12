@@ -46,6 +46,9 @@ class Crawler:
                     if len(articleList) == 0:
                         break
                     for article in articleList:
+                        if type(article) == type(''):
+                            flag = True
+                            break
                         if 'newsId' not in article.keys():
                             continue
                         newsId = article['newsId']
