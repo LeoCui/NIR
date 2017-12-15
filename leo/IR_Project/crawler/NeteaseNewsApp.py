@@ -113,7 +113,9 @@ class Crawler:
             traceback.print_exc()
         else:
             for topic in topicList:
-                docList = topic['docs']
+                docList = list()
+                if 'docs' in topic.keys():
+                    docList = topic['docs']
                 for doc in docList:
                     docId = doc['docid']
                     docIdSet.add(docId)

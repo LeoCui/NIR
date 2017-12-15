@@ -176,7 +176,8 @@ def main():
             if news == -1:
                 duplicateCount += 1
                 continue
-            news.commentCount = commentNum
+            if commentNum != '':
+                news.commentCount = commentNum
             commentList = ifengAppCrawler.getComment(commentUrl, min(100, int(news.commentCount)))
             news.category = cate
             news.commentList = commentList
