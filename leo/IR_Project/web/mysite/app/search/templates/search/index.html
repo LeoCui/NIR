@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load staticfiles %}
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+<meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>What's New?</title>
+<link href="{% static 'css/style.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'css/index.css' %}" rel="stylesheet" type="text/css" />
+	<link href="{% static 'Scripts/StyleSheet.css' %}" rel="stylesheet" type="text/css" />
+	<script src="{% static 'Scripts/jquery-1.4.1.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'Scripts/JScript2.js' %}" type="text/javascript"></script>
+</head>
+<body>
+<div id="container">
+	<div id="bd">
+        <div id="main">
+        	<h1 class="title">
+            	<div class="logo large"></div>
+            </h1>
+
+            <div class="inputArea">
+            	<form id="form1" runat="server">
+					<input type="text" class="searchInput"  url="true" id="Text1">
+					<input type="button" class="searchButton" onclick="javascript:window.location=&#39;result.html&#39;">
+					<div style="display: none; position: absolute;z-index:9999;" id="allSitesBoxHdl" class="classlist" onmouseover="this.style.display='block'" onmouseout="this.style.display='none'">
+						<ul id="allSitesBoxContent"></ul>
+					</div>
+					<script type="text/javascript">        
+						Init();
+					</script>
+
+				</form>	
+            </div>
+	
+			<div class="newsbox">
+				<div class="recommend">
+					<div class="typetitle">为你推荐</div>
+					<ul>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+					</ul>
+				</div>
+				<div class="recommend">
+					<div class="typetitle">今日热点</div>
+					<ul>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+					</ul>
+				</div>
+			</div>
+			
+        </div><!-- End of main -->
+    </div><!--End of bd-->
+</div>
+</body>
+</html>

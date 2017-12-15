@@ -1,0 +1,27 @@
+@charset "utf-8";
+html{*overflow:auto;}
+body{
+	background: url(../img/bg1.jpg) no-repeat;
+	font-family:幼圆;
+}
+
+#main{width:730px;margin:5px auto 0;}
+#main h1.title{width:600px;}
+#bd{margin-bottom:20px;}
+.logo.large{margin:10px 170px;width:342px;height:205px;background: url(../img/logo.png) no-repeat center center;}
+
+
+/*input搜索区域*/
+.inputArea{margin-bottom:100px;padding-left:100px;}
+.inputArea .searchInput{float:left;border:1px solid #bfbfbf;padding:0 15px;outline:none;height:40px;*height:39px;*line-height:40px;width:400px; background:url(../img/inputbg.png);font-size:14px;}
+.inputArea .searchButton{float:left;width:106px;height:42px;*height:41px;background:url(../img/seachbtn.png) no-repeat;border:none;cursor:pointer;}
+
+/*联想下拉区域*/
+.inputArea .dataList{display:none;position:absolute;left:0;top:42px;*top:43px;width:550px;padding:5px 0;background:#fff;border:1px solid #bfbfbf;border-top:none;}
+.inputArea .dataList li{padding:2px 15px;font-size:14px;}
+.inputArea .dataList li:hover{background:#f0f0f0;color:#0080cc;font-weight:bold;}
+
+.newsbox{position: relative;margin:25px;width:95%;height:300px;background: rgba(255,255,255,0.6);}
+.newsbox .recommend{width:50%;float:left;}
+.newsbox .recommend li{margin:10px 30px;cursor:pointer;font-size:14px;}
+.newsbox .recommend .typetitle{margin:15px;font-size:20px;font-weight:bold;}
