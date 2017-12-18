@@ -23,7 +23,14 @@
             <div class="inputArea">
             	<form id="form1" runat="server">
 					<input type="text" class="searchInput"  url="true" id="Text1">
-					<input type="button" class="searchButton" onclick="javascript:window.location=&#39;result.html&#39;">
+					<script type="text/javascript">
+						function query(){
+							var query = document.getElementById("Text1").value;
+							location.href="result?query=" + query;
+							console.log(location.href);
+						}
+					</script>
+					<input type="button" class="searchButton" onclick="query()">
 					<div style="display: none; position: absolute;z-index:9999;" id="allSitesBoxHdl" class="classlist" onmouseover="this.style.display='block'" onmouseout="this.style.display='none'">
 						<ul id="allSitesBoxContent"></ul>
 					</div>
