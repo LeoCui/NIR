@@ -15,30 +15,62 @@
 <body>
 <div id="container">
 	<div id="hd" class="ue-clear">
-    	<div class="logo"></div>
-        <div class="inputArea">
-			<form id="form1" runat="server">
-				<input type="text" class="searchInput"  url="true" id="Text1">
-				<input type="button" class="searchButton">
-				<div style="display: none; position: absolute;z-index:9999;" id="allSitesBoxHdl" class="classlist" onmouseover="this.style.display='block'" onmouseout="this.style.display='none'">
-					<ul id="allSitesBoxContent"></ul>
-				</div>
-				<script type="text/javascript">        
-					Init();
-				</script>
-			</form>	
-        </div>
+		 <script type="text/javascript">
+			  function gotoIndex(){
+					window.location.href = "http://localhost:8000/search/";
+					console.log(location.href);
+				}
+		 </script>
+    	<div id="div1" class="logo" onclick="gotoIndex()"></div>
+		  <div class="inputArea">
+            	<div id="form1" runat="server">
+					<input type="text" class="searchInput"  value='{{ result.query }}' onkeydown="enter(event)" url="true" id="Text1">
+					<script type="text/javascript">
+						function query(){
+							var query = document.getElementById("Text1").value;
+							location.href="result?query=" + query;
+							console.log(location.href);
+						}
+						function enter(event){
+							var key = event.keyCode;
+							if(key == 13){
+								query();
+							}
+						}
+					</script>
+					<input type="button" class="searchButton" onclick="query()"/>
+					<div style="display: none; position: absolute;z-index:9999;" id="allSitesBoxHdl" class="classlist" onmouseover="this.style.display='block'" onmouseout="this.style.display='none'">
+						<ul id="allSitesBoxContent"></ul>
+					</div>
+					<script type="text/javascript">        
+						Init();
+					</script>
+				</div>	
+            </div>
     </div>
     <div class="nav">
+        <script type="text/javascript">
+				function queryCategory(category){
+					var href = window.location.href;
+					if (href.indexOf("category=")<=0){
+						href = href + "&category=" + category;
+					}
+					else{
+						href = href.replace(/category=[^&$]*/,"category="+category);
+					}
+					window.location.href = href;
+					console.log(location.href);
+				}
+			</script>
     	<ul class="searchList">
-            <li class="searchItem">国内</li>
-            <li class="searchItem">国际</li>
-            <li class="searchItem current">社会</li>
-            <li class="searchItem">军事</li>
-            <li class="searchItem">体育</li>
-            <li class="searchItem">科技</li>
-            <li class="searchItem">娱乐</li>
-            <li class="searchItem">政务</li>
+            <li class="searchItem {{ result.category.society }}" onclick="queryCategory('society')">社会</li>
+            <li class="searchItem {{ result.category.international }}" onclick="queryCategory('international')">国际</li>
+            <li class="searchItem {{ result.category.beijing }}" onclick="queryCategory('beijing')">北京</li>
+            <li class="searchItem {{ result.category.military }}" onclick="queryCategory('military')">军事</li>
+            <li class="searchItem {{ result.category.sport }}" onclick="queryCategory('sport')">体育</li>
+            <li class="searchItem {{ result.category.technology }}" onclick="queryCategory('technology')">科技</li>
+            <li class="searchItem {{ result.category.entertainment }}" onclick="queryCategory('entertainment')">娱乐</li>
+            <li class="searchItem {{ result.category.politics }}" onclick="queryCategory('politics')">政务</li>
         </ul>
     </div>
 	<div id="bd" class="ue-clear">
@@ -46,18 +78,28 @@
         	<div class="sideBar">
                 <div class="subfield">发布时间</div>
                 <ul class="subfieldContext">
+                	<script type="text/javascript">
+						function queryDate(name){
+							var href = window.location.href;
+							if (href.indexOf("date=")<=0){
+								href = href + "&date=" + name;
+							}
+							else{
+								href = href.replace(/date=[^&$]*/,"date="+name);
+							}
+							window.location.href = href;
+							console.log(location.href);
+						}
+					</script>
                 	<li>
-                    	<span class="name">今天</span>
-                        <span class="unit">(862)</span>
+                    	<span class="name" onclick="queryDate('today')">今天</span>
                     </li>
                     <li>
-                    	<span class="name">昨天</span>
-                        <span class="unit">(785)</span>
+                   	 	<span class="name" onclick="queryDate('threeDays')">最近三天</span>
                     </li>
                     <li>
-                    	<span class="name">最近一星期</span>
-                        <span class="unit">(4564)</span>
-                    </li>
+                    	<span class="name" onclick="queryDate('thisWeek')">最近一星期</span>
+                    <!--
                     <li>
                     	<input type="text" />
                         <span class="divsion">-</span>
@@ -68,21 +110,35 @@
                         	<span class="text">自定义</span>
                         </a>
                     </li>
+                    -->
                     
                 </ul>
                 <div class="subfield">新闻来源</div>
+                <script type="text/javascript">
+						function querySource(name){
+							var href = window.location.href;
+							if (href.indexOf("source=")<=0){
+								href = href + "&source=" + name;
+							}
+							else{
+								href = href.replace(/source=[^&$]*/,"source="+name);
+							}
+							window.location.href = href;
+							console.log(location.href);
+						}
+					</script>
                 <ul class="subfieldContext">
-                	<li>
-                    	<span class="name">网易新闻</span>
+                		<li>
+                			<span class="name"  onclick="querySource('NeteaseNewsApp')">网易新闻</span>
                     </li>
                     <li>
-                    	<span class="name">今日头条</span>
+                    	<span class="name" onclick="querySource('SohuNewsApp')">搜狐新闻</span>
                     </li>
                     <li>
-                    	<span class="name">新浪新闻</span>
+                    	<span class="name" onclick="querySource('IfengNewsApp')">凤凰新闻</span>
                     </li>
                     <li>
-                    	<span class="name">搜狐新闻</span>
+                    	<span class="name" onclick="querySource('cctvNewsApp')">央视新闻</span>
                     </li>
                     <li class="more">
                     	<a href="javascript:;">
@@ -108,13 +164,25 @@
                 	<a href="javascript:;" class="icon"></a>
                 </div>
             </div><!-- End of sideBar -->
-			
+				<script type="text/javascript">
+						function sortOpt(flag){
+							var href = window.location.href;
+							if (href.indexOf("sort=")<=0){
+								href = href + "&sort=" + flag;
+							}
+							else{
+								href = href.replace(/sort=[^&$]*/,"sort="+flag);
+							}
+							window.location.href = href;
+							console.log(location.href);
+						}
+				</script>
             <div class="resultArea">
             	<p class="resultTotal">
                 	<span class="info">找到约&nbsp;<span class="totalResult">{{ result.resultCount }}</span>&nbsp;条结果(用时<span class="time">{{ result.cost }}秒)</span>
                     <span class="orderOpt">
-                    	<a href="javascript:;" class="byTime">按时间排序</a>
-                        <a href="javascript:;" class="byDependence">按相关度排序</a>
+                    	<a onclick="sortOpt(0)"  class="byTime">按相关度排序</a>
+                        <a onclick="sortOpt(1)"  class="byDependence">按时间排序</a>
                     </span>
                 </p>
                 <div class="resultList">
@@ -124,13 +192,16 @@
                         	<a href={{ news.url }}  target="_blank" class="title">
                         	<script type="text/javascript">
                         		var news = {{ news|safe }};
+                        		var result = {{ result|safe }}
                         		var title = news.title;
-                        		var keywords = news.keywords;
-                        		console.log(news.keywords);
+                        		console.log(result)
+                        		var keywords = result.keywords;
+                        		console.log(keywords);
                         		var len = keywords.length;
-                        		console.log(len);
+                          		console.log("title: " + title)
                         		for(var i=0;i<len;i++){
                         			keyword = keywords[i];
+                        			console.log("keyword: " + keyword)
                          			var title = title.replace(keyword,"<span class='keyWord'>" + keyword + "</span>");
                          		}
                         		document.write(title);
@@ -142,18 +213,18 @@
                                 <span class="value">{{ news.relationship }}</span>
                             </span>
 							<span class="fileType">
-                            	<span class="label">评论：</span>
-                                <span class="value">{{ news.commentCount }}</span>
+                            	<span class="label">阅读量：</span>
+                                <span class="value">{{ news.pv }}</span>
                             </span>
                         </div>
                         <div class="itemBody">
 							<script type="text/javascript">
 								var news = {{ news|safe }};
+								var result = {{ result|safe }}
                         		var content = news.content;
-                        		var keywords = news.keywords;
-                        		console.log(news.keywords);
+                        		var keywords = result.keywords;
+                        		console.log(keywords);
                         		var len = keywords.length;
-                        		console.log(len);
                         		for(var i=0;i<len;i++){
                         			keyword = keywords[i];
                          			var content = content.replace(keyword,"<span class='keyWord'>" + keyword + "</span>");
@@ -272,13 +343,22 @@
 	
 	//分页
 	$(".pagination").pagination({{ result.resultCount }}, {
-		current_page :0, //当前页码
+		current_page :{{result.page}}-1, //当前页码
 		items_per_page :9,
 		display_msg :true,
 		callback :pageselectCallback
 	});
 	function pageselectCallback(page_id, jq) {
-		alert("当前页id(由0开始)：" + page_id + "，\n每页显示：" + this.items_per_page + "条数据");
+		//alert("当前页id(由0开始)：" + page_id + "，\n每页显示：" + this.items_per_page + "条数据");
+		page_id = page_id +1;
+		var href = window.location.href;
+		if (href.indexOf("page=")<=0){
+			href = href + "&page=" + page_id;
+		}
+		else{
+			href = href.replace(/page=(\d)*/,"page="+page_id);
+		}
+		window.location.href = href;
 	}
 	
 	setHeight();

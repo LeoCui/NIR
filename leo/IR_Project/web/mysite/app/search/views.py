@@ -1,46 +1,239 @@
+import sys
+sys.path.append("/Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/app/search/")
+#print(sys.path)
 from django.shortcuts import render
 # Create your views here.
 from django.http import HttpResponse
 import json
 from django.utils.safestring import SafeString
 from django.shortcuts import get_object_or_404, render
+import time
+import lib.utils as utils
+import math
+import requests
+import traceback
+import subprocess
+
 def index(request):
     return render(request, 'search/index.html')
-def result(request):
-    result = dict()
+
+def getInput(request):
+    query = request.GET.get('query')
+    page = request.GET.get('page')
+    category = request.GET.get('category')
+    source = request.GET.get('source')
+    date = request.GET.get('date')
+    sort = request.GET.get('sort')
+    input = dict()
+    input['query'] = ''
+    input['page'] = 1
+    input['category'] = 'all'
+    input['source'] = 'all'
+    input['from'] = 'all'
+    input['to'] = 'all'
+    input['sort'] = 0
+    if query != None:
+        input['query'] = query
+    if page != None:
+        input['page'] = page
+    if category != None:
+        input['category'] = category
+    if source != None:
+        input['source'] = source
+    if sort != None:
+        input['sort'] = sort
+    if date != None:
+        endTime = time.time() + 3600*8
+        if date == "today":
+            beginTime = endTime - 86400
+        if date == 'threeDays':
+            beginTime = endTime - 86400*3
+        if date == 'thisWeek':
+            beginTime = endTime - 86400*7
+        input['from'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(beginTime))
+        input['to'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(endTime))
+    return input
+
+def getOutput(input, db, startTime):
+    output = dict()
+    #调用jar包
+    queryResult = invokeJar(input)
+    output['resultCount'] = 0
+    output['keywords'] = list()
+    output['query'] = input['query']
+    output['newsList'] = list()
+    print(queryResult)
+    if queryResult != None and 'resultCount' in queryResult.keys():
+        output['resultCount'] = queryResult['resultCount']
+    if queryResult != None and 'keywords' in queryResult.keys():
+        output['keywords'] = queryResult['keywords'] 
+    if queryResult != None and 'docList' in queryResult.keys():
+        output['newsList'] = getNewsList(queryResult, db)
+    output['page'] = input['page']
+    output['relatedNewsList'] = getRelatedSearch(input['query'], 4)
+    output['searchHistory'] = getSearchHistory(db, 4)
+    output['category'] = getCurrentCate(input['category']) 
+    endTime = time.time()
+    cost = endTime - startTime
+    cost = round(cost,2)
+    output['cost'] = cost
+    return output
+
+def invokeJar(input):
+
+    input = json.dumps(input)
+    input = input.replace("\"","\\\"")
+    input = "\"" + input + "\""
+    command = "cd /Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/app/search/lib/doc_rank && "
+    command = command + "java -jar docrank-1.0.4.jar " + input
+    #print('command: '+ command)
+    queryResult = None
+    try:
+        out_bytes = subprocess.check_output(command,shell=True)
+        out_str = out_bytes.decode()
+        queryResult = json.loads(out_str)
+    except:
+        traceback.print_exc()
+    return queryResult 
+
+def getRelatedSearch(query,num):
+    result = list()
+    payload = dict()
+    payload['query'] = query
+    url = 'http://api.bing.com/osjson.aspx'
+    try:
+       r = requests.get(url, params=payload, timeout=0.5)
+       r = r.json()
+    except:
+       traceback.print_exc()
+       return  result
+    result = r[1][0:num]
+    print(result)
+    return result 
+    
+def getSearchHistory(db,num):
+    queryList = list()
+    queryList.append('content')
+    conds = 'order by id desc limit ' + str(num)
+    tableName = 'search_history'
+    results = db.select(tableName, queryList, conds)
+    results1 = list()
+    for result in results:
+        results1.append(result[0])
+    return results1
+
+def getCurrentCate(category):
+    currentCateDict = dict()
+    if category != None:
+        currentCateDict[category] = 'current'
+    return currentCateDict
+
+def getNewsList(queryResult, db):
+    cateDict = dict()
+    cateDict['politics'] = '政务'
+    cateDict['sport'] = '体育'
+    cateDict['NBA'] = '体育'
+    cateDict['international'] = '国际'
+    cateDict['military'] = '军事'
+    cateDict['society'] = '社会'
+    cateDict['beijing'] = '社会'
+    cateDict['technology'] = '科技'
+    cateDict['entertainment'] = '娱乐'
+    cateDict['hotNews'] = '社会'
+    cateDict['taiwan'] = '军事'
+    cateDict['finance'] = '财经'
+    sourceDict = dict()
+    sourceDict['cctvNewsApp'] = '央视新闻'
+    sourceDict['IfengNewsApp'] = '凤凰新闻'
+    sourceDict['NeteaseNewsApp'] = '网易新闻'
+    sourceDict['SohuNewsApp'] = '搜狐新闻'
     newsList = list()
-    news = dict()
-    keywords = list()
-    keywords.append('情敌')
-    keywords.append('大学生')
-    news['title'] = '女大学生实习时移情有妇之夫 男友为泄愤刺死情敌';
-    news['content'] = '俗话说冲动是魔鬼，男女恋爱本来是甜蜜的，然而在读大一的大学生王某因为女友邵某移情别恋提出分手，他竟然将情敌李某一刀刺死，近日，王某因涉嫌故意伤害罪被浦东新区人民检察院批准逮捕。经查，今年7月30号晚上7点30分，来沪实习的河南郑州成功财经学院大一学生王某接到女友邵某电话，称其已和别人发生关系，要求和王某分手。王某接完电话后，就带着一把水果刀，通过邵某找到与其发生关系的李某。犯罪嫌疑人王某：“李某走的时候他突然转身骂我，还准备打我，在这时候我脑子已经一片空白，就已经啥也不知道了，拿着刀怎么就捅他了。等我清醒的时候刀已经在他身上了。”经鉴定，被害人李某系生前被他人用锐器刺戳背部，导致肝脏、肾脏破裂而失血性休克死亡。审讯中，王某对自己的犯罪行为供认不讳，据王某交代，他与女友邵某';
-    news['keywords'] = keywords
-    news['source'] = '网易新闻'
-    news['commentCount'] = 20
-    news['url'] = 'https://c.m.163.com/news/a/D5MI07OT0001899N.html?spss=newsapp'
-    news['category'] = '社会'
-    news['publishTime'] = '2017-12-18'
-    news['relationship'] = '91.27%' 
-    newsList.append(news)
-    result['newsList'] = newsList
-    result['page'] = 1
-    result['resultCount'] = 2 
-    result['cost'] = 0.21
-    # 4个
-    relatedNewsList = list()
-    relatedNewsList.append('女大学生')
-    relatedNewsList.append('情妇')
-    relatedNewsList.append('有妇之夫')
-    relatedNewsList.append('有妇之夫')
-    searchHistory = list()
-    searchHistory.append('大学生')
-    searchHistory.append('大火')
-    searchHistory.append('川普')
-    searchHistory.append('习大大')
-    result['relatedNewsList'] = relatedNewsList 
-    result['searchHistory'] = searchHistory
-    return render(request, 'search/result.html', {'result': result})
+    docList = queryResult['docList']
+    keywords = queryResult['keywords']
+    for doc in docList:
+        id = doc['id']
+        kind = doc['kind']
+        relationship = doc['relationship']
+        tableName = 'content_info'
+        if kind == "1":
+            tableName = 'comment_info'
+        queryList = list()
+        queryList.append('news_id')
+        queryList.append('content')
+        conds = 'where news_id=' + str(id)
+        results = db.select(tableName, queryList, conds)
+        if results == None or len(results)==0:
+            continue
+        result = results[0]
+        news_id = result[0]
+        content = result[1]
+        content = getAbstract(content, keywords, 100)
+        if kind == "1":
+            content = content.replace('|',' ')
+        queryList = list()
+        queryList.append('title')
+        queryList.append('source')
+        queryList.append('pv')
+        queryList.append('url')
+        queryList.append('category')
+        queryList.append('publish_time')
+        tableName = 'news_info'
+        conds = 'where id=' + str(news_id)
+        results = db.select(tableName, queryList, conds)
+        if results == None or len(results)==0:
+            continue
+        result = results[0]
+        news = dict()
+        news['title'] = result[0]
+        news['source'] = sourceDict[result[1]]
+        news['pv'] = result[2]
+        if int(news['pv']) == -1:
+            news['pv'] = '未知'
+        news['url'] = result[3]
+        publishTime = str(result[5])
+        publishTimeList = publishTime.split()
+        publishDate = publishTimeList[0]
+        news['publishTime'] = publishDate
+        news['category'] = cateDict[result[4]]
+        news['content'] = content
+        news['relationship'] = relationship
+        newsList.append(news)
+    return newsList
+
+def getAbstract(content, keywords, maxNum):
+    len1 = len(content)
+    maxCount = -1
+    result = ''
+    for i in range(0, len1-maxNum+1):
+        count = 0
+        str1 = content[i:i+maxNum+1]
+        for keyword in keywords:
+            if keyword in str1:
+                count += 1
+        if count > maxCount:
+            maxCount = count
+            result = str1
+    return result
 
 
+def recordSearchHistory(input,db):
+    if input == None or input['query']=='':
+        return
+    query = input['query']
+    valueDict =dict()
+    valueDict['content'] = query
+    tableName = 'search_history'
+    db.insert(tableName, valueDict) 
+    db.connection.commit()
+    return 
+
+def result(request):
+    startTime = time.time()
+    db = utils.Mysql('localhost','root','informationRetrieval','information_retrieval')
+    input = getInput(request)
+    #print(input)
+    recordSearchHistory(input,db)
+    output = getOutput(input, db,startTime)
+    db.connection.close()
+    return render(request, 'search/result.html', {'result': output})
 
