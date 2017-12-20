@@ -21,13 +21,19 @@
             </h1>
 
             <div class="inputArea">
-            	<form id="form1" runat="server">
-					<input type="text" class="searchInput"  url="true" id="Text1">
+            	<div id="form1" runat="server">
+					<input type="text" class="searchInput"  onkeydown="enter(event)" url="true" id="Text1">
 					<script type="text/javascript">
 						function query(){
 							var query = document.getElementById("Text1").value;
 							location.href="result?query=" + query;
 							console.log(location.href);
+						}
+						function enter(event){
+							var key = event.keyCode;
+							if(key == 13){
+								query();
+							}
 						}
 					</script>
 					<input type="button" class="searchButton" onclick="query()">
@@ -38,7 +44,7 @@
 						Init();
 					</script>
 
-				</form>	
+				</div>	
             </div>
 	
 			<div class="newsbox">

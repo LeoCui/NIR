@@ -151,25 +151,13 @@ def getNewsList(queryResult, db):
     docList = queryResult['docList']
     keywords = queryResult['keywords']
     for doc in docList:
-        id = doc['id']
-        kind = doc['kind']
-        relationship = doc['relationship']
-        tableName = 'content_info'
-        if kind == "1":
-            tableName = 'comment_info'
-        queryList = list()
-        queryList.append('news_id')
-        queryList.append('content')
-        conds = 'where news_id=' + str(id)
-        results = db.select(tableName, queryList, conds)
-        if results == None or len(results)==0:
-            continue
-        result = results[0]
-        news_id = result[0]
-        content = result[1]
-        content = getAbstract(content, keywords, 100)
-        if kind == "1":
-            content = content.replace('|',' ')
+        news_id = doc['id']
+        relationship = float(doc['relationship'])
+        relationship = relationship * 100
+        relationship = round(relationship,2)
+        relationship = str(relationship) + '%'
+        #news_info
+        tableName = 'news_info'
         queryList = list()
         queryList.append('title')
         queryList.append('source')
@@ -177,7 +165,6 @@ def getNewsList(queryResult, db):
         queryList.append('url')
         queryList.append('category')
         queryList.append('publish_time')
-        tableName = 'news_info'
         conds = 'where id=' + str(news_id)
         results = db.select(tableName, queryList, conds)
         if results == None or len(results)==0:
@@ -195,8 +182,30 @@ def getNewsList(queryResult, db):
         publishDate = publishTimeList[0]
         news['publishTime'] = publishDate
         news['category'] = cateDict[result[4]]
-        news['content'] = content
         news['relationship'] = relationship
+        #content_info
+        content = ''
+        tableName = 'content_info'
+        queryList = list()
+        queryList.append('content')
+        conds = 'where news_id=' + str(news_id) + ' order by sequence_number'
+        results = db.select(tableName, queryList, conds)
+        if results == None or len(results)==0:
+            continue
+        for result in results:
+            content = content + result[0]
+        #comment_info 
+        tableName = 'comment_info'
+        queryList = list()
+        queryList.append('content')
+        conds = 'where news_id= ' + str(news_id)
+        results = db.select(tableName, queryList, conds)
+        for result in results:
+            temp = result[0]
+            temp = temp.replace('|',' ')
+            content = content + temp
+        content = getAbstract(content, keywords, 100)
+        news['content'] = content
         newsList.append(news)
     return newsList
 

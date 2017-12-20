@@ -62,6 +62,7 @@ body{
 .resultArea .resultList .itemHead .keyWord{color:#dd6d89;font-weight:bold}
 .resultArea .resultList .itemBody .keyWord{color:#dd6d89;font-weight:bold}
 .resultArea .resultList .itemHead a.title{font-size:16px;color:#0080cc;text-decoration:underline;}
+.resultArea .resultList .itemHead a.preview{font-size:16px;color:#008000;margin-left:10px;}
 .resultArea .resultList .itemHead .value{color:#008000;}
 .resultArea .resultList .itemHead .divsion{margin:0 5px;}
 .resultArea .resultList .itemHead .fileType{margin-right:10px;}

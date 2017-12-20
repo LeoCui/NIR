@@ -9,8 +9,9 @@
 <link href="{% static 'css/result.css' %}" rel="stylesheet" type="text/css" />
 
 <link href="{% static 'Scripts/StyleSheet.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'Scripts/jquery-1.4.1.min.js' %}" type="text/javascript"></script>
 <script src="{% static 'Scripts/JScript2.js' %}" type="text/javascript"></script>
+<script src="{% static 'js/popwin.js' %}" type="text/javascript"></script>
+<script src="{% static 'js/jquery.min.js' %}" type="text/javascript"></script>
 </head>
 <body>
 <div id="container">
@@ -185,11 +186,23 @@
                         <a onclick="sortOpt(1)"  class="byDependence">按时间排序</a>
                     </span>
                 </p>
+					<script>
+						$(document).ready(function() {
+    						$(".preview").on('mouseover' , function(){
+								popWin.showWin("800","600",getTitle(event.target.id),getUrl(event.target.id));
+							});
+						});
+					</script>
                 <div class="resultList">
+                <script type="text/javascript">
+                		var seq = 0;
+                		var titles = new Array();
+                		var urls = new Array();
+                </script>
                 {% for news in result.newsList %}
                 	<div class="resultItem">
                     	<div class="itemHead">
-                        	<a href={{ news.url }}  target="_blank" class="title">
+                         	<a href="{{ news.url }}" target="_blank" class="title">
                         	<script type="text/javascript">
                         		var news = {{ news|safe }};
                         		var result = {{ result|safe }}
@@ -205,7 +218,21 @@
                          			var title = title.replace(keyword,"<span class='keyWord'>" + keyword + "</span>");
                          		}
                         		document.write(title);
+                        		titles[seq] = title;
+                        		urls[seq] = news.url;
+                        		function getTitle(id){
+                        			return titles[id];
+                        		}
+                        		function getUrl(id){
+                        			return urls[id];
+                        		}
                         	</script>
+                        	<a href="{{ news.url }}" target="_blank" id="test"  class="preview">预览</a>
+                        	<script type="text/javascript">
+                        		temp = seq.toString();
+                					$('#test').attr('id',temp);
+                					seq = seq+1;
+                				</script>
                         	</a>
                             <span class="divsion">-</span>
                             <span class="dependValue">
