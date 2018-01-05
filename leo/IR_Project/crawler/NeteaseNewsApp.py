@@ -189,6 +189,8 @@ class Crawler:
                 traceback.print_exc()
                 break
             else:
+                if 'comments' not in r.keys():
+                    continue 
                 commentDict = r['comments']
                 count = len(commentDict)
                 #print('offset is ' + str(offset))

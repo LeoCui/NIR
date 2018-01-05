@@ -15,7 +15,27 @@ import traceback
 import subprocess
 
 def index(request):
-    return render(request, 'search/index.html')
+    hotNewsList = list()
+    db = utils.Mysql('localhost','root','informationRetrieval','information_retrieval')
+    queryList = ('news_id',)
+    conds = 'order by id desc limit 10'
+    hotNews = db.select('hot_news', queryList, conds)
+    for news in hotNews:
+        newsId = news[0]
+        queryList = ('title', 'url')
+        conds = 'where id=' + str(newsId)
+        newsInfos = db.select('news_info', queryList, conds)
+        newsInfo = newsInfos[0]
+        title = newsInfo[0]
+        url = newsInfo[1]
+        hotNewsList.append({'title':title,'url':url})
+    print(hotNewsList)
+    hotNewsList1 = hotNewsList[0:5]
+    hotNewsList2 = hotNewsList[5:10]
+    result = dict()
+    result['hotNewsList1'] = hotNewsList1
+    result['hotNewsList2'] = hotNewsList2
+    return render(request, 'search/index.html',{'result':result})
 
 def getInput(request):
     query = request.GET.get('query')
@@ -84,6 +104,7 @@ def invokeJar(input):
     input = json.dumps(input)
     input = input.replace("\"","\\\"")
     input = "\"" + input + "\""
+    print(input)
     command = "cd /Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/app/search/lib/doc_rank && "
     command = command + "java -jar docrank-1.0.4.jar " + input
     #print('command: '+ command)
@@ -245,4 +266,3 @@ def result(request):
     output = getOutput(input, db,startTime)
     db.connection.close()
     return render(request, 'search/result.html', {'result': output})
-

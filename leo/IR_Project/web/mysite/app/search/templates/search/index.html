@@ -46,26 +46,21 @@
 
 				</div>	
             </div>
-	
 			<div class="newsbox">
-				<div class="recommend">
-					<div class="typetitle">为你推荐</div>
-					<ul>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-					</ul>
-				</div>
 				<div class="recommend">
 					<div class="typetitle">今日热点</div>
 					<ul>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						{% for news in result.hotNewsList1 %}
+						<li><a href={{ news.url }}>{{ news.title }}</a></li>
+						{% endfor %}
+					</ul>
+				</div>
+				<div class="recommend">
+					<div class="typetitle">为你推荐</div>
+					<ul>
+						{% for news in result.hotNewsList2 %}
+						<li><a href={{ news.url }}>{{ news.title }}</a></li>
+						{% endfor %}
 					</ul>
 				</div>
 			</div>
