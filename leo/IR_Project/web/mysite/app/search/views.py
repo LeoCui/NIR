@@ -1,5 +1,6 @@
 import sys
 sys.path.append("/Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/app/search/")
+sys.path.append('/Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/')
 #print(sys.path)
 from django.shortcuts import render
 # Create your views here.
@@ -9,10 +10,13 @@ from django.utils.safestring import SafeString
 from django.shortcuts import get_object_or_404, render
 import time
 import lib.utils as utils
+from lib.DocRank import * 
 import math
 import requests
 import traceback
 import subprocess
+from  myLib.preload import *
+
 
 def index(request):
     hotNewsList = list()
@@ -76,13 +80,17 @@ def getInput(request):
 
 def getOutput(input, db, startTime):
     output = dict()
-    #调用jar包
-    queryResult = invokeJar(input)
+    db = Preload.db
+    print(db)
+    postingList = Preload.postingList
+    stopWordList = Preload.stopWordList
+    docCount = Preload.docCount
+    queryInstance = DocRank(postingList, db, stopWordList, docCount)
+    queryResult = queryInstance.query(input)
     output['resultCount'] = 0
     output['keywords'] = list()
     output['query'] = input['query']
     output['newsList'] = list()
-    print(queryResult)
     if queryResult != None and 'resultCount' in queryResult.keys():
         output['resultCount'] = queryResult['resultCount']
     if queryResult != None and 'keywords' in queryResult.keys():
@@ -90,7 +98,12 @@ def getOutput(input, db, startTime):
     if queryResult != None and 'docList' in queryResult.keys():
         output['newsList'] = getNewsList(queryResult, db)
     output['page'] = input['page']
+    startTime1 = time.time()
     output['relatedNewsList'] = getRelatedSearch(input['query'], 4)
+    endTime1 = time.time()
+    cost = endTime1 - startTime1
+    cost = round(cost,2)
+    print('cost:' + str(cost)) 
     output['searchHistory'] = getSearchHistory(db, 4)
     output['category'] = getCurrentCate(input['category']) 
     endTime = time.time()
@@ -99,27 +112,11 @@ def getOutput(input, db, startTime):
     output['cost'] = cost
     return output
 
-def invokeJar(input):
-
-    input = json.dumps(input)
-    input = input.replace("\"","\\\"")
-    input = "\"" + input + "\""
-    print(input)
-    command = "cd /Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/app/search/lib/doc_rank && "
-    command = command + "java -jar docrank-1.0.4.jar " + input
-    #print('command: '+ command)
-    queryResult = None
-    try:
-        out_bytes = subprocess.check_output(command,shell=True)
-        out_str = out_bytes.decode()
-        queryResult = json.loads(out_str)
-    except:
-        traceback.print_exc()
-    return queryResult 
 
 def getRelatedSearch(query,num):
     result = list()
     payload = dict()
+    return result
     payload['query'] = query
     url = 'http://api.bing.com/osjson.aspx'
     try:
@@ -225,7 +222,7 @@ def getNewsList(queryResult, db):
             temp = result[0]
             temp = temp.replace('|',' ')
             content = content + temp
-        content = getAbstract(content, keywords, 100)
+        content = getAbstract(content, keywords, 200)
         news['content'] = content
         newsList.append(news)
     return newsList
@@ -259,10 +256,10 @@ def recordSearchHistory(input,db):
 
 def result(request):
     startTime = time.time()
-    db = utils.Mysql('localhost','root','informationRetrieval','information_retrieval')
+    db = Preload.db
     input = getInput(request)
     #print(input)
     recordSearchHistory(input,db)
     output = getOutput(input, db,startTime)
-    db.connection.close()
     return render(request, 'search/result.html', {'result': output})
+

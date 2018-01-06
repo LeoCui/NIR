@@ -1,9 +1,22 @@
 #!/usr/bin/env python
 import os
 import sys
+sys.path.append('/Users/Leo/Documents/github/NIR/leo/IR_Project/web/mysite/')
+import myLib.utils as utils
+from  myLib.preload import *
+
+def preload():
+    preloadInstance1 = Preload()
+    print('hello')
+    if Preload.db == None:
+        preloadInstance1.init()
+        print('--------preload--------')
+        print(Preload.db)
+
 
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings") 
+    preload()
     try:
         from django.core.management import execute_from_command_line
     except ImportError:

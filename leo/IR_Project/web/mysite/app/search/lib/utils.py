@@ -3,7 +3,7 @@
 #     File Name           :     utils.py
 #     Created By          :     Leo
 #     Creation Date       :     [2017-12-07 19:44]
-#     Last Modified       :     [2018-01-02 23:41]
+#     Last Modified       :     [2018-01-06 12:39]
 #     Description         :      
 #################################################################################
 import re
@@ -33,7 +33,7 @@ class Mysql:
             queryStr = queryStr + query + ','
         queryStr = queryStr[ 0:len(queryStr)-1 ]
         sql = 'select ' + queryStr + ' from  ' + tableName + ' '  + conds;
-        print(sql)
+        #print(sql)
         self.cursor.execute(sql)
         result = self.cursor.fetchall()
         return result
