@@ -5,10 +5,11 @@ import math
 import time
 import traceback
 from zlib import crc32
+import numpy
 
 class DocRank(object):
 
-    def __init__(self, posting_list, db, stop_word, docsSize):
+    def __init__(self, posting_list, db, stop_word, docsSize, lengthDict, avgLength):
 
         #倒排记录表
         self.posting_list = posting_list
@@ -20,6 +21,10 @@ class DocRank(object):
         self.docsSize = docsSize
         #每页显示文档数
         self.pageNumber = 10
+        #文档长度
+        self.lengthDict = lengthDict
+        #文档平均长度
+        self.avgLength = avgLength
 
     #文档排序
     def query(self, json_input):
@@ -83,7 +88,10 @@ class DocRank(object):
         relatedDocSize = len(intersection)
 
     	#选区指定页数文档
-        result = self.filterPage(rank, page)
+        if page >= 0:
+            result = self.filterPage(rank, page)
+        else:
+            result = rank
         print("-----filterPage", len(result))
 
     	#构造输出
@@ -115,21 +123,24 @@ class DocRank(object):
 
         #查询terms相关文档
         docs = list()       #保存最终List
-        alldocs = dict()    #保存查询List
+        alldocs = list()    #保存查询List
         for term in terms:
-            result = self.queryByTerms(1, term, source, category, time_from, time_to, sortType, page)
-            alldocs[term] = result['docList']
-            relatedDocCount += result['resultCount']
+            result = self.queryByTerms(1, term, source, category, time_from, time_to, sortType, -1)
+            alldocs.extend(result['docList'])
+            #relatedDocCount = max(int(result['resultCount'])/10, relatedDocCount)
+        alldocs = sorted(alldocs, key=lambda x: float(x['relationship']), reverse=True)
+        relatedDocCount = len(alldocs)
         print("wildcard---alldocs:", len(alldocs))
 
-        for i in range(self.pageNumber):
-            for term in terms:
-                if i < len(alldocs[term]):
-                    docs.append(alldocs[term][i])
-                if len(docs) >= self.pageNumber:
-                    break
+       # for i in range(self.pageNumber):
+       #     for term in terms:
+       #         if i < len(alldocs[term]):
+       #             docs.append(alldocs[term][i])
+       #         if len(docs) >= self.pageNumber:
+       #             break
+        docs = self.filterPage(alldocs, page)
         print("wildcard---docs:", len(docs))
-
+        #docs = sorted(docs, key=lambda x: float(x['relationship']), reverse=True)
         output = dict()
         output['resultCount'] = relatedDocCount
         output['keywords'] = terms
@@ -190,19 +201,18 @@ class DocRank(object):
                 df = 0
             idf = 0.
 
-            if df != 0:
-                    idf = math.log(self.docsSize/df, 10)
+            idf = math.log((self.docsSize-df+0.5)/(df+0.5), 10)
 
-            Wt_q[term] = self.calculateWF(tfs[term]) * idf
+            Wt_q[term] = idf
 
             length += Wt_q[term] ** 2
 
     	length = math.sqrt(length)
 
     	#归一化
-    	if length != 0:
-            for term in Wt_q.keys():
-                Wt_q[term] = Wt_q[term] / length
+    	#if length != 0:
+        #    for term in Wt_q.keys():
+        #        Wt_q[term] = Wt_q[term] / length
 
     	return Wt_q
 
@@ -246,6 +256,7 @@ class DocRank(object):
         length = 0
         score = 0
 
+        '''
         for term in Wt_q.keys():
             if term in self.posting_list.keys():
                 tf = int(self.posting_list[term]['docDict'][docID])
@@ -265,7 +276,18 @@ class DocRank(object):
         #计算余弦相似度
         for term in Wt_q.keys():
             score += Wt_q[term] * Wt_d[term]
-
+        '''
+        for term in Wt_q.keys():
+            if term in self.posting_list.keys():
+                tf = int(self.posting_list[term]['docDict'][docID])
+            else:
+                tf = 0
+            docLength = 0.
+            if docID in self.lengthDict.keys():
+                docLength = self.lengthDict[docID]
+            score += Wt_q[term] * ((2.5*tf)/(1.5*(0.25+0.75*(docLength/self.avgLength)) + tf))
+            
+        score = numpy.tanh(score/5.0)
         return score
 
     #文档筛选

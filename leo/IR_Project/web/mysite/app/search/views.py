@@ -85,7 +85,9 @@ def getOutput(input, db, startTime):
     postingList = Preload.postingList
     stopWordList = Preload.stopWordList
     docCount = Preload.docCount
-    queryInstance = DocRank(postingList, db, stopWordList, docCount)
+    newsLengthDict = Preload.newsLengthDict
+    averageLen = Preload.newsAvgLength
+    queryInstance = DocRank(postingList, db, stopWordList, docCount, newsLengthDict, averageLen)
     queryResult = queryInstance.query(input)
     output['resultCount'] = 0
     output['keywords'] = list()
@@ -116,7 +118,7 @@ def getOutput(input, db, startTime):
 def getRelatedSearch(query,num):
     result = list()
     payload = dict()
-    return result
+    #return result
     payload['query'] = query
     url = 'http://api.bing.com/osjson.aspx'
     try:

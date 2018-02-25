@@ -3,7 +3,7 @@
 #     File Name           :     utils.py
 #     Created By          :     Leo
 #     Creation Date       :     [2017-12-07 19:44]
-#     Last Modified       :     [2018-01-02 18:09]
+#     Last Modified       :     [2018-01-17 19:33]
 #     Description         :      
 #################################################################################
 import re
@@ -52,8 +52,9 @@ class Mysql:
         rtn = self.cursor.execute(sql, valueList)
         return self.connection.insert_id()
     
-    def update(self):
-        return
+    def update(self, tableName, sql):
+        rtn = self.cursor.execute(sql)
+        return None
     
     def delete(self):
        return 
