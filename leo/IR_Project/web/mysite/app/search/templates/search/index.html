@@ -21,9 +21,22 @@
             </h1>
 
             <div class="inputArea">
-            	<form id="form1" runat="server">
-					<input type="text" class="searchInput"  url="true" id="Text1">
-					<input type="button" class="searchButton" onclick="javascript:window.location=&#39;result.html&#39;">
+            	<div id="form1" runat="server">
+					<input type="text" class="searchInput"  onkeydown="enter(event)" url="true" id="Text1">
+					<script type="text/javascript">
+						function query(){
+							var query = document.getElementById("Text1").value;
+							location.href="result?query=" + query;
+							console.log(location.href);
+						}
+						function enter(event){
+							var key = event.keyCode;
+							if(key == 13){
+								query();
+							}
+						}
+					</script>
+					<input type="button" class="searchButton" onclick="query()">
 					<div style="display: none; position: absolute;z-index:9999;" id="allSitesBoxHdl" class="classlist" onmouseover="this.style.display='block'" onmouseout="this.style.display='none'">
 						<ul id="allSitesBoxContent"></ul>
 					</div>
@@ -31,28 +44,23 @@
 						Init();
 					</script>
 
-				</form>	
+				</div>	
             </div>
-	
 			<div class="newsbox">
-				<div class="recommend">
-					<div class="typetitle">为你推荐</div>
-					<ul>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-					</ul>
-				</div>
 				<div class="recommend">
 					<div class="typetitle">今日热点</div>
 					<ul>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害 孩子器官疑被挖走</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
-						<li><a href="https://www.baidu.com">司机撞伤女童怕担责任将其杀害</a></li>
+						{% for news in result.hotNewsList1 %}
+						<li><a href={{ news.url }}>{{ news.title }}</a></li>
+						{% endfor %}
+					</ul>
+				</div>
+				<div class="recommend">
+					<div class="typetitle">为你推荐</div>
+					<ul>
+						{% for news in result.hotNewsList2 %}
+						<li><a href={{ news.url }}>{{ news.title }}</a></li>
+						{% endfor %}
 					</ul>
 				</div>
 			</div>

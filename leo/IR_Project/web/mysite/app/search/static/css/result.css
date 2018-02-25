@@ -62,6 +62,7 @@ body{
 .resultArea .resultList .itemHead .keyWord{color:#dd6d89;font-weight:bold}
 .resultArea .resultList .itemBody .keyWord{color:#dd6d89;font-weight:bold}
 .resultArea .resultList .itemHead a.title{font-size:16px;color:#0080cc;text-decoration:underline;}
+.resultArea .resultList .itemHead a.preview{font-size:16px;color:#008000;margin-left:10px;}
 .resultArea .resultList .itemHead .value{color:#008000;}
 .resultArea .resultList .itemHead .divsion{margin:0 5px;}
 .resultArea .resultList .itemHead .fileType{margin-right:10px;}
@@ -73,10 +74,11 @@ body{
 
 .resultArea .pagination{margin-bottom:25px;padding-left:32px;}
 /*相关搜索*/
+
 .resultArea .dependSearch{margin-bottom:30px;padding-left:32px;font-size:14px;}
 .resultArea .dependSearch h6{float:left;margin-right:15px;font-weight:bold;}
 .resultArea .dependSearch p{margin-bottom:5px;}
-.resultArea .dependSearch a{display:inline-block;margin-right:15px;text-decoration:underline;width:90px; white-space:nowrap; overflow:hidden;text-overflow:ellipsis;}
+.resultArea .dependSearch a{display:inline-block;margin-right:15px;text-decoration:underline;width:140px; white-space:nowrap; overflow:hidden;text-overflow:ellipsis;}
 .resultArea .searchInResult{padding-left:35px;}
 .resultArea .searchInResult .inResult{position:absolute;right:-190px;top:8px;font-size:14px;text-decoration:underline;}
 .resultArea .searchInResult .searchButton{left:417px;}

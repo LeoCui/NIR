@@ -90,6 +90,7 @@ CREATE TABLE `dictionary` (
   `id` int(20) NOT NULL AUTO_INCREMENT,
   `term` varchar(255) NOT NULL DEFAULT '',
   `term_hash` int(20) unsigned NOT NULL,
+  `is_handled` int(10) NOT NULL DEFAULT 0,
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `extra_info` varchar(1024) NOT NULL DEFAULT '',

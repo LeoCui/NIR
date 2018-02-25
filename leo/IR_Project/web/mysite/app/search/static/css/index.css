@@ -21,7 +21,7 @@ body{
 .inputArea .dataList li{padding:2px 15px;font-size:14px;}
 .inputArea .dataList li:hover{background:#f0f0f0;color:#0080cc;font-weight:bold;}
 
-.newsbox{position: relative;margin:25px;width:95%;height:300px;background: rgba(255,255,255,0.6);}
+.newsbox{position: relative;margin:25px;width:98%;height:290px;background: rgba(255,255,255,0.6);}
 .newsbox .recommend{width:50%;float:left;}
 .newsbox .recommend li{margin:10px 30px;cursor:pointer;font-size:14px;}
 .newsbox .recommend .typetitle{margin:15px;font-size:20px;font-weight:bold;}
