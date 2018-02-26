@@ -5,8 +5,11 @@
     * The architecture
         * ![](pictures/Picture1.png)
     * The effects:
+    
        * ![](pictures/Picture2.png)
+       
        * ![](pictures/Picture3.png)
+    
        * ![](pictures/Picture4.png)
 * To know more details, you can visit the design document.
 * The project has 5 members: 
