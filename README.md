@@ -3,11 +3,11 @@
 * The project is deployed on Aliyun, you can visit it via [](http://123.57.35.217:8888/search)
 * Here are some functions of the project:
 	* The architecture
-		* ![](pictures/picture1.png)
+		* ![](pictures/Picture1.png)
 	* The effects:
-	   * ![](pictures/picture2.png)
-	   * ![](pictures/picture3.png)
-	   * ![](pictures/picture4.png)
+	   * ![](pictures/Picture2.png)
+	   * ![](pictures/Picture3.png)
+	   * ![](pictures/Picture4.png)
 * To know more details, you can visit the design document.
 * The project has 5 members: 
 	* Yiming Cui
